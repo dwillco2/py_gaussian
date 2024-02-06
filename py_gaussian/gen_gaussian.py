@@ -1,4 +1,5 @@
 import os
+import pathlib
 
 class GenGaussian:
     def __init__(self, 
@@ -57,8 +58,6 @@ class GenGaussian:
         self.no_freeze = no_freeze
         if not self.route:
             self.route = []
-        if self.freq and not self.opt and not self.geom_chk:
-            self.route.append("geom=allcheck")
         self.title = self.gen_title()
         if not output_name:
             self.output_name = self.gen_output_name()
@@ -80,7 +79,7 @@ class GenGaussian:
                     f.write(f"%oldchk={old_chk} \n")
                 else:
                     f.write(f"%oldchk={old_chk}.chk \n")
-            elif self.freq and not self.opt:
+            elif self.freq and not self.opt and self.geom_chk:
                 if self.old_checkpoint:
                     old_chk = self.old_checkpoint
                 elif self.ts:
@@ -107,7 +106,7 @@ class GenGaussian:
             f.write("\n")
             f.write(f"{self.title}\n")
             f.write("\n")
-            if self.opt and not self.geom_chk:
+            if not self.geom_chk:
                 f.write(f"{self.charge} {self.multiplicity}\n")
                 for line in self.xyz_lines:
                     f.write(line)
@@ -203,15 +202,15 @@ class GenGaussian:
         return input_line
     
     def get_charge(self):
-        try:
-            for filename in os.listdir(self.directory):
-                i = os.path.join(self.directory, filename)
-                if os.path.isfile(i) and ".CHRG" in i:
-                    with open(i, "r") as f:
-                        lines = f.readlines()
-                        self.charge = int(lines[0])
-                        f.close()
-        except:
+        for filename in os.listdir(self.directory):
+            i = os.path.join(self.directory, filename)
+            if os.path.isfile(i) and ".CHRG" in i:
+                with open(i, "r") as f:
+                    lines = f.readlines()
+                    self.charge = int(lines[0])
+                    f.close()
+                break
+        else:
             self.charge = 0
             print("charge file not found, charge = 0")
             
@@ -226,7 +225,7 @@ class GenGaussian:
             return f"{self.name}"
     
     def read_xyz(self):
-        if self.opt and not self.geom_chk:
+        if not self.geom_chk:
             xyz_directory = os.path.join(self.directory,self.xyz)
             with open(xyz_directory, "r") as f:
                 xyz_lines = f.readlines()
