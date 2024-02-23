@@ -1,6 +1,7 @@
 import os
 
 class GenGaussian:
+    # Class for storing information for Gaussian jobs and generating scripts
     def __init__(self, 
                  directory, 
                  name,
