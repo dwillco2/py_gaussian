@@ -4,9 +4,10 @@ import numpy as np
 from scipy.optimize import minimize
 from scipy import interpolate
 from exceptions import CouldNotPlotSmoothProfile
+import textalloc as ta
 
 
-def plot_smooth_profile(zi_s, energies, ax, label):
+def plot_smooth_profile(zi_s, energies, ax, fig, label, color=None):
     """
     Plot a smooth reaction profile by spline interpolation and finding the
     stationary points. This will not afford the correct number of stationary
@@ -49,23 +50,35 @@ def plot_smooth_profile(zi_s, energies, ax, label):
         raise CouldNotPlotSmoothProfile
 
     # Plot the function
-    ax.plot(fine_zi_s, optimised_spline(fine_zi_s), c="k", label=label)
-    ax.scatter(zi_s, optimised_spline(zi_s), c="b", zorder=10)
+    if color:
+        ax.plot(fine_zi_s, optimised_spline(fine_zi_s), label=label, color=color)
+    else:
+        ax.plot(fine_zi_s, optimised_spline(fine_zi_s), label=label)
+    #ax.scatter(zi_s, optimised_spline(zi_s), zorder=10)
 
     # Annotate the plot with the relative energies
     max_delta = max(energies) - min(energies)
-
+    
+    txt_lst = []
     for i, energy in enumerate(optimised_spline(zi_s)):
         # Shift the minima labels (even points) below the point and the
         # transition state labels above the point
-        shift = -0.07 * max_delta if i % 2 == 0 else 0.03 * max_delta
+        #shift = -0.07 * max_delta if i % 2 == 0 else 0.03 * max_delta
 
-        ax.annotate(
+        """ax.annotate(
             f"{energy:.1f}",
             (zi_s[i], energy + shift),
             fontsize=12,
             ha="center",
-        )
+        )"""
+        txt_lst.append(f"{energy:.1f}")
+    """ta.allocate_text(fig,ax,zi_s,optimised_spline(zi_s),
+                txt_lst,
+                x_scatter=zi_s, y_scatter=optimised_spline(zi_s),
+                x_lines=[fine_zi_s],y_lines=[optimised_spline(fine_zi_s)],
+                draw_lines=False,
+                textsize=10)"""
+
 
     return None
 
