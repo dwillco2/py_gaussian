@@ -26,7 +26,8 @@ class GenGaussian:
                  output_name=None,
                  geom_chk=False,
                  old_checkpoint=None,
-                 no_freeze=False
+                 no_freeze=False,
+                 nbo=False
                  ) -> None:
         self.directory = directory
         self.name = name
@@ -56,6 +57,7 @@ class GenGaussian:
         self.old_checkpoint = old_checkpoint
         self.route = route
         self.no_freeze = no_freeze
+        self.nbo = nbo
         if not self.route:
             self.route = []
         self.title = self.gen_title()
@@ -110,13 +112,15 @@ class GenGaussian:
                 f.write(f"{self.charge} {self.multiplicity}\n")
                 for line in self.xyz_lines:
                     f.write(line)
-            f.write("\n")
+                f.write("\n")
             if len(self.freeze_atoms) > 0:
                 for atom in self.freeze_atoms:
                     f.write(f"{atom} F\n")
             if len(self.freeze_bonds) > 0:
                 for bond in self.freeze_bonds:
                     f.write(f"{bond[0]} {bond[1]} F\n")
+            if self.nbo:
+                f.write("$nbo bndidx $end\n")
             f.write("\n")
             f.close()
 
@@ -197,6 +201,8 @@ class GenGaussian:
             input_line += f"scrf=(SMD,solvent={self.solvent}) "
         if self.geom_chk:
             input_line += f"geom=AllCheck "
+        if self.nbo:
+            input_line += "pop=nboread "
         for option in self.route:
             input_line += f"{option} "
         return input_line
