@@ -1,7 +1,5 @@
 import os
 
-import os
-
 class GenOrca:
     # Class for storing information for Gaussian jobs and generating scripts
     def __init__(self, 
