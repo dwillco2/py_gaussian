@@ -134,6 +134,7 @@ class GenGaussian:
             f.write(f"#$ -l h_rt={runtime}:00:00\n")
             f.write(f"#$ -l h_vmem={self.memory}G\n")
             f.write(f"#$ -pe sharedmem {self.nprocs}\n")
+            f.write(f"#$ -l rl9=true\n")
             f.write("\n")
             f.write(f"input={self.output_name}.gjf\n")
             f.write("\n")

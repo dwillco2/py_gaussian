@@ -42,6 +42,7 @@ class GenCrest:
             f.write(f"#$ -l h_rt={runtime}:00:00\n")
             f.write(f"#$ -l h_vmem={self.memory}G\n")
             f.write(f"#$ -pe sharedmem {self.nprocs}\n")
+            f.write(f"#$ -l rl9=true\n")
             f.write("\n")
             f.write("# Initialise the environment modules\n")
             f.write(". /etc/profile.d/modules.sh\n")
