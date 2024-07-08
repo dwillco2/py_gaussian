@@ -32,10 +32,8 @@ class GenOrca:
         self.directory = directory
         self.name = name
         self.geom_chk = geom_chk
-        if not xyz and not self.geom_chk:
+        if not xyz:
             self.xyz = f"{name}.xyz"
-        elif self.geom_chk:
-            self.xyz = None
         else:
             self.xyz = xyz
         self.opt = opt
@@ -140,12 +138,24 @@ class GenOrca:
                 return f"freq_{self.name}_{self.solvent}"
             else:
                 return f"freq_{self.name}"
+        else:
+            if self.solvent:
+                return f"{self.functional.lower()}_{self.name}_{self.solvent}"
+            else:
+                return f"{self.functional.lower()}_{self.name}"
 
     def gen_input_line(self):
+        ri_input = False
         input_line = "! "
+        if "RI-" in self.functional:
+            ri_input = True
         input_line += f"{self.functional} "
+        if self.dispersion_method:
+            input_line += f"{self.dispersion_method} "
         if self.basis:
             input_line += f"{self.basis} "
+        if ri_input:
+            input_line += "RIJCOSX AutoAux DefGrid2 "
         input_line += "TightSCF "
         if self.opt:
             input_line += "Opt "
@@ -177,11 +187,9 @@ class GenOrca:
             return f"{self.name}"
     
     def read_xyz(self):
-        if not self.geom_chk:
-            xyz_directory = os.path.join(self.directory,self.xyz)
-            with open(xyz_directory, "r") as f:
-                xyz_lines = f.readlines()
-                self.xyz_lines = xyz_lines[2:]
-                f.close()
-        else:
-            pass
+        xyz_directory = os.path.join(self.directory,self.xyz)
+        with open(xyz_directory, "r") as f:
+            xyz_lines = f.readlines()
+            self.xyz_lines = xyz_lines[2:]
+            f.close()
+ 

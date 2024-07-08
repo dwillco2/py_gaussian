@@ -5,6 +5,12 @@ import os
 import numpy as np
 import pandas as pd
 
+TMS_FLUORIDE_DSD_BLYP = -1335720.785882493 # kj mol-1
+TMS_CATION_DSD_BLYP = -1072693.2391423658 # kj mol-1
+TMS_STANDARD = 952.5 # kj mol-1
+KJMOL_CONV = 2625.5
+
+
 def embed_and_optimize(smiles):
     # generate UFF optimised mol from smiles
     mol = Chem.MolFromSmiles(smiles)
@@ -140,3 +146,72 @@ def split_xyz(file):
     return split_lines
 
 
+def dos2unix(file_received, filename):
+    with open(filename, "w") as fout: 
+        with open(file_received, "r") as fin:
+            for line in fin:
+                line = line.replace('\r\n', '\n')
+                fout.write(line)
+    return None
+
+
+def fia_calc(neutral,fluoride):
+    neutral_kJ = neutral * KJMOL_CONV
+    fluoride_kJ = fluoride * KJMOL_CONV
+    products = fluoride_kJ + TMS_CATION_DSD_BLYP
+    reagents = neutral_kJ + TMS_FLUORIDE_DSD_BLYP
+    diff = products - reagents
+    return TMS_STANDARD - diff
+
+
+def read_orca_output(file):
+    # takes an orca output file and reads SCF and thermochemistry info into dataframe
+    file_name = os.path.split(file)
+    name = file_name[1].replace(".out","")
+    with open(file, "r") as f:
+        lines = f.readlines()
+        f.close()
+    sp = 0
+    zpe_corr = 0
+    e_corr = 0
+    h_corr = 0
+    h = 0
+    g_corr = 0
+    g = 0
+
+    for line in lines:
+        if "FINAL SINGLE POINT ENERGY" in line:
+            split_sp = line.split()
+            sp = float(split_sp[4])
+        elif "Non-thermal (ZPE) correction" in line:
+            zpe_split = line.split()
+            zpe_corr = float(zpe_split[3])
+        elif "Total thermal correction" in line:
+            e_split = line.split()
+            e_corr = float(e_split[3])
+        elif "Thermal Enthalpy correction" in line:
+            h_split = line.split()
+            h_corr = float(h_split[4])
+        elif "Total Enthalpy" in line:
+            h_split = line.split()
+            h = float(h_split[3])
+        elif "G-E(el)" in line:
+            g_split = line.split()
+            g_corr = float(g_split[2])
+        elif "Final Gibbs free energy" in line:
+            h_split = line.split()
+            g = float(h_split[5])
+        else:
+            pass
+    
+    df = pd.DataFrame(data={"name": [name],
+                            "single_point": [sp],
+                            "zpe_correction": [zpe_corr],
+                            "E_correction": [e_corr],
+                            "thermal_H_correction": [h_corr],
+                            "total_H_correction": [zpe_corr + e_corr + h_corr],
+                            "H": [h],
+                            "G_correction": [g_corr],
+                            "G": [g],
+                            })
+    return df
