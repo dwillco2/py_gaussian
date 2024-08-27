@@ -5,8 +5,6 @@ import os
 import numpy as np
 import pandas as pd
 
-TMS_FLUORIDE_DSD_BLYP = -1335720.785882493 # kj mol-1
-TMS_CATION_DSD_BLYP = -1072693.2391423658 # kj mol-1
 TMS_STANDARD = 952.5 # kj mol-1
 KJMOL_CONV = 2625.5
 
@@ -155,13 +153,20 @@ def dos2unix(file_received, filename):
     return None
 
 
-def fia_calc(neutral,fluoride):
+def fia_calc(neutral,fluoride,tms_f,tms):
     neutral_kJ = neutral * KJMOL_CONV
     fluoride_kJ = fluoride * KJMOL_CONV
-    products = fluoride_kJ + TMS_CATION_DSD_BLYP
-    reagents = neutral_kJ + TMS_FLUORIDE_DSD_BLYP
+    tms_kJ = tms * KJMOL_CONV
+    tms_f_kJ = tms_f * KJMOL_CONV
+    products = fluoride_kJ + tms_kJ
+    reagents = neutral_kJ + tms_f_kJ
     diff = products - reagents
     return TMS_STANDARD - diff
+
+def fia_solv_calc(fia_g,la_f_corr,la_corr,f_corr):
+    h_term = la_f_corr - la_corr - f_corr
+    h_term_kj = h_term * KJMOL_CONV
+    return fia_g - h_term_kj
 
 
 def read_orca_output(file):

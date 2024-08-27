@@ -21,6 +21,7 @@ class GenGaussian:
                  functional="B3LYP",
                  basis="Def2SVP",
                  dispersion_method=None,
+                 solvation_method="SMD",
                  solvent=None,
                  route=None,
                  output_name=None,
@@ -53,6 +54,7 @@ class GenGaussian:
         self.functional = functional
         self.basis = basis
         self.dispersion_method = dispersion_method
+        self.solvation_method = solvation_method
         self.solvent = solvent
         self.old_checkpoint = old_checkpoint
         self.route = route
@@ -93,6 +95,15 @@ class GenGaussian:
                 else:
                     f.write(f"%oldchk={old_chk}.chk \n")
             elif self.opt and self.geom_chk:
+                if self.old_checkpoint:
+                    old_chk = self.old_checkpoint
+                else:
+                    raise Exception("geom=allcheck given, but no checkpoint file provided")
+                if ".chk" in old_chk:
+                    f.write(f"%oldchk={old_chk} \n")
+                else:
+                    f.write(f"%oldchk={old_chk}.chk \n")
+            elif self.geom_chk:
                 if self.old_checkpoint:
                     old_chk = self.old_checkpoint
                 else:
@@ -171,6 +182,11 @@ class GenGaussian:
                 return f"freq_{self.name}_{self.solvent}"
             else:
                 return f"freq_{self.name}"
+        else:
+            if self.solvent:
+                return f"sp_{self.name}_{self.solvent}"
+            else:
+                return f"sp_{self.name}"
 
     def gen_input_line(self):
         input_line = "#p "
@@ -199,7 +215,7 @@ class GenGaussian:
         if self.dispersion_method:
             input_line += f"EmpiricalDispersion={self.dispersion_method} "
         if self.solvent:
-            input_line += f"scrf=(SMD,solvent={self.solvent}) "
+            input_line += f"scrf=({self.solvation_method},solvent={self.solvent}) "
         if self.geom_chk:
             input_line += f"geom=AllCheck "
         if self.nbo:
