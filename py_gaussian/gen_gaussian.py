@@ -11,6 +11,8 @@ class GenGaussian:
                  freeze_bonds=[],
                  ts=False,
                  freq=False,
+                 scan=False,
+                 scan_list=None, # [[N1, N2, N3...], nsteps, stepsize] 
                  irc=False,
                  irc_direction=None,
                  irc_opt=False,
@@ -44,6 +46,8 @@ class GenGaussian:
         self.freeze_bonds = freeze_bonds
         self.ts = ts
         self.freq = freq
+        self.scan = scan
+        self.scan_list = scan_list
         self.irc = irc
         self.irc_direction = irc_direction
         self.irc_opt = irc_opt
@@ -130,6 +134,10 @@ class GenGaussian:
             if len(self.freeze_bonds) > 0:
                 for bond in self.freeze_bonds:
                     f.write(f"{bond[0]} {bond[1]} F\n")
+            if self.scan:
+                atoms = [f"{i}" for i in self.scan_list[0]]
+                atom_spec = " ".join(atoms)
+                f.write(f"{atom_spec} S {self.scan_list[1]} {self.scan_list[2]}\n")
             if self.nbo:
                 f.write("$nbo bndidx $end\n")
             f.write("\n")
@@ -162,7 +170,12 @@ class GenGaussian:
             f.close()
     
     def gen_output_name(self):
-        if self.irc:
+        if self.scan:
+            if self.solvent:
+                return f"scan_{self.name}_{self.solvent}"
+            else:
+                return f"scan_{self.name}"
+        elif self.irc:
             if self.solvent:
                 return f"irc_{self.irc_direction}_{self.name}_{self.solvent}"
             else:
@@ -201,7 +214,7 @@ class GenGaussian:
             input_line += "opt=NoFreeze "
         elif self.opt and self.ts and not mod_redun and self.no_freeze:
             input_line += "opt=(ts,calcfc,noeigentest,NoFreeze) "
-        elif self.opt and not self.ts and mod_redun:
+        elif self.opt and not self.ts and mod_redun or self.scan:
             input_line += "opt=ModRedundant "
         elif self.opt and self.ts and mod_redun:
             input_line += "opt=(ts,calcfc,noeigentest,ModRedundant) "
@@ -238,7 +251,9 @@ class GenGaussian:
             print("charge file not found, charge = 0")
             
     def gen_title(self):
-        if self.irc:
+        if self.scan:
+            return f"{self.name} scan"
+        elif self.irc:
             return f"{self.name} irc {self.irc_direction}"
         elif self.opt:
             return f"{self.name} opt"
