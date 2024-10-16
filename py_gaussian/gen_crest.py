@@ -53,7 +53,13 @@ class GenCrest:
             f.write(f"INPUT={self.xyz}\n")
             f.write("\n")
             f.write("# Run the program\n")
-            if self.solvent:
+            if self.freeze_atoms:
+                f.write(f"crest $INPUT --constrain {','.join(map(str, self.freeze_atoms))}\n")
+                if self.solvent:
+                    f.write(f"crest $INPUT --gfn2 --cinp .xcontrol.sample --chrg {self.charge} --alpb {self.solvent} -T {self.nprocs}\n")
+                else:
+                    f.write(f"crest $INPUT --gfn2 --cinp .xcontrol.sample --chrg {self.charge} -T {self.nprocs}\n")
+            elif self.solvent:
                 f.write(f"crest $INPUT --gfn2 --chrg {self.charge} --alpb {self.solvent} -T {self.nprocs}\n")
             else:
                 f.write(f"crest $INPUT --gfn2 --chrg {self.charge} -T {self.nprocs}\n")
