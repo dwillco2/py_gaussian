@@ -1,6 +1,7 @@
 import os
+from .gen_job import GenJob
 
-class GenGaussian:
+class GenGaussian(GenJob):
     # Class for storing information for Gaussian jobs and generating scripts
     def __init__(self, 
                  directory, 
@@ -19,7 +20,7 @@ class GenGaussian:
                  charge=None,
                  multiplicity=1,
                  nprocs=8, 
-                 memory=8,
+                 memory=8000,
                  functional="B3LYP",
                  basis="Def2SVP",
                  dispersion_method=None,
@@ -32,15 +33,14 @@ class GenGaussian:
                  no_freeze=False,
                  nbo=False
                  ) -> None:
-        self.directory = directory
-        self.name = name
-        self.geom_chk = geom_chk
-        if not xyz and not self.geom_chk:
-            self.xyz = f"{name}.xyz"
-        elif self.geom_chk:
-            self.xyz = None
-        else:
-            self.xyz = xyz
+        super().__init__(directory, 
+                 name,
+                 xyz,
+                 charge,
+                 multiplicity,
+                 nprocs, 
+                 memory,
+                 solvent,)
         self.opt = opt
         self.freeze_atoms=freeze_atoms
         self.freeze_bonds = freeze_bonds
@@ -51,29 +51,24 @@ class GenGaussian:
         self.irc = irc
         self.irc_direction = irc_direction
         self.irc_opt = irc_opt
-        self.charge = charge
-        self.multiplicity = multiplicity
-        self.nprocs = nprocs
-        self.memory = memory
         self.functional = functional
         self.basis = basis
         self.dispersion_method = dispersion_method
         self.solvation_method = solvation_method
-        self.solvent = solvent
+        self.nbo = nbo
+        self.geom_chk = geom_chk
+        if self.geom_chk:
+            self.xyz = None
         self.old_checkpoint = old_checkpoint
         self.route = route
         self.no_freeze = no_freeze
-        self.nbo = nbo
+        self.title = self.gen_title()
         if not self.route:
             self.route = []
-        self.title = self.gen_title()
         if not output_name:
             self.output_name = self.gen_output_name()
         else:
             self.output_name = output_name
-        if not self.charge:
-            self.get_charge()
-        self.read_xyz()
 
     def gen_output(self):
         full_path = os.path.join(self.directory,self.output_name)
@@ -118,7 +113,7 @@ class GenGaussian:
                     f.write(f"%oldchk={old_chk}.chk \n")
             f.write(f"%chk={self.output_name}.chk \n")
             f.write(f"%nproc={self.nprocs} \n")
-            f.write(f"%mem={self.memory}GB \n")
+            f.write(f"%mem={self.memory}MB \n")
             f.write(f"{self.gen_input_line()}\n")
             f.write("\n")
             f.write(f"{self.title}\n")
@@ -144,31 +139,21 @@ class GenGaussian:
             f.close()
 
     def gen_bash(self, runtime=48):
+        template = self.gen_bash_template(runtime=runtime)
         full_path = os.path.join(self.directory,self.output_name)
-        with open(f"{full_path}.bash", "w") as f:
-            f.write("#!/bin/sh\n")
-            f.write("# Grid Engine options (lines prefixed with #$)\n")
-            f.write(f"#$ -N {self.output_name}\n")
-            f.write("#$ -cwd\n")
-            f.write(f"#$ -l h_rt={runtime}:00:00\n")
-            f.write(f"#$ -l h_vmem={self.memory}G\n")
-            f.write(f"#$ -pe sharedmem {self.nprocs}\n")
-            f.write(f"#$ -l rl9=true\n")
-            f.write("\n")
+        with open(f"{full_path}.sh", "w") as f:
+            f.write(template)
             f.write(f"input={self.output_name}.gjf\n")
-            f.write("\n")
-            f.write("# Initialise the environment modules\n")
-            f.write(". /etc/profile.d/modules.sh\n")
-            f.write("\n")
             f.write("# Export environment variables\n")
             f.write("export g16root=/exports/applications/apps/community/chem\n")
             f.write("export GAUSS_SCRDIR=$TMPDIR\n")
             f.write("source $g16root/g16/bsd/g16.profile\n")
             f.write("\n")
             f.write("# Run the program\n")
-            f.write("$g16root/g16/g16 $input\n")
+            f.write(f"$g16root/g16/g16 $input > {self.output_name}.out\n")
             f.close()
     
+
     def gen_output_name(self):
         if self.scan:
             if self.solvent:
@@ -200,6 +185,7 @@ class GenGaussian:
                 return f"sp_{self.name}_{self.solvent}"
             else:
                 return f"sp_{self.name}"
+
 
     def gen_input_line(self):
         input_line = "#p "
@@ -236,20 +222,8 @@ class GenGaussian:
         for option in self.route:
             input_line += f"{option} "
         return input_line
-    
-    def get_charge(self):
-        for filename in os.listdir(self.directory):
-            i = os.path.join(self.directory, filename)
-            if os.path.isfile(i) and ".CHRG" in i:
-                with open(i, "r") as f:
-                    lines = f.readlines()
-                    self.charge = int(lines[0])
-                    f.close()
-                break
-        else:
-            self.charge = 0
-            print("charge file not found, charge = 0")
-            
+
+
     def gen_title(self):
         if self.scan:
             return f"{self.name} scan"
@@ -261,13 +235,3 @@ class GenGaussian:
             return f"{self.name} freq"
         else:
             return f"{self.name}"
-    
-    def read_xyz(self):
-        if not self.geom_chk:
-            xyz_directory = os.path.join(self.directory,self.xyz)
-            with open(xyz_directory, "r") as f:
-                xyz_lines = f.readlines()
-                self.xyz_lines = xyz_lines[2:]
-                f.close()
-        else:
-            pass
