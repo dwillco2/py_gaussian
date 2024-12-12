@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "py_gaussian"
+version = "1.0"
+description = "Generating Gaussian16 inputs"
+authors = [
+    { name = "Dominic Willcox", email = "d.willcox@hw.ac.uk" }
+]
+
+[tool.setuptools]
+packages = ["find:."]
