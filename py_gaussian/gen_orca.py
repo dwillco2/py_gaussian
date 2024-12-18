@@ -24,7 +24,7 @@ class GenOrca(GenJob):
                  ts=False,
                  freq=False,
                  scan=False,
-                 scan_list=None, # [[N1, N2, N3...], nsteps, stepsize] 
+                 scan_list=None, # [atom_0, atom_1, d_0, d_1, nsteps] 
                  irc=False,
                  irc_direction=None,
                  irc_opt=False,
@@ -77,6 +77,17 @@ class GenOrca(GenJob):
             f.write("%pal\n")
             f.write(f"nprocs {self.nprocs}\n")
             f.write("end\n")
+            if self.scan:
+                f.write("%geom Scan\n")
+                f.write(f"B {self.scan_list[0]} {self.scan_list[1]} = {self.scan_list[2]}, {self.scan_list[3]}, {self.scan_list[4]}\n")
+                f.write("end\n")
+                f.write("end\n")
+            if self.ts:
+                f.write("%geom\n")
+                f.write("Calc_Hess true\n")
+                f.write("NumHess true\n")
+                f.write("Recalc_Hess 5\n")
+                f.write("end\n")
             f.write(f"# {self.title}\n")
             f.write("\n")
             f.write(f"*XYZFILE {self.charge} {self.multiplicity} {self.xyz}\n")
@@ -145,10 +156,15 @@ class GenOrca(GenJob):
             input_line += f"{self.basis} "
         if ri_input:
             input_line += "RIJCOSX AutoAux DefGrid2 "
-        if self.opt:
-            input_line += "Opt "
-        if self.freq:
+        if self.opt or self.scan:
+            if not self.ts:
+                input_line += "Opt "
+        if self.opt and self.ts:
+            input_line += "OptTS "
+        if self.freq and not self.ts:
             input_line += "Freq "
+        if self.freq and self.ts:
+            input_line += "NumFreq "
         if not self.goat:
             input_line += "TightSCF "
         return input_line
