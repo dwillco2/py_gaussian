@@ -26,7 +26,6 @@ class GenOrca(GenJob):
                  scan=False,
                  scan_list=None, # [atom_0, atom_1, d_0, d_1, nsteps] 
                  irc=False,
-                 irc_direction=None,
                  irc_opt=False,
                  charge=None,
                  multiplicity=1,
@@ -54,7 +53,6 @@ class GenOrca(GenJob):
         self.scan = scan
         self.scan_list = scan_list
         self.irc = irc
-        self.irc_direction = irc_direction
         self.irc_opt = irc_opt
         self.goat = goat
         if self.goat:
@@ -88,6 +86,10 @@ class GenOrca(GenJob):
                 f.write("NumHess true\n")
                 f.write("Recalc_Hess 5\n")
                 f.write("end\n")
+            if self.irc:
+                f.write("%irc\n")
+                f.write(" MAXITER 30\n")
+                f.write("end\n") 
             f.write(f"# {self.title}\n")
             f.write("\n")
             f.write(f"*XYZFILE {self.charge} {self.multiplicity} {self.xyz}\n")
@@ -118,9 +120,9 @@ class GenOrca(GenJob):
                 return f"scan_{self.name}"
         elif self.irc:
             if self.solvent:
-                return f"irc_{self.irc_direction}_{self.name}_{self.solvent}"
+                return f"irc_{self.name}_{self.solvent}"
             else:
-                return f"irc_{self.irc_direction}_{self.name}"
+                return f"irc_{self.name}"
         elif self.opt and self.ts:
             if self.solvent:
                 return f"opt_ts_{self.name}_{self.solvent}"
@@ -149,6 +151,8 @@ class GenOrca(GenJob):
             input_line += "GOAT "
         if "RI-" in self.functional:
             ri_input = True
+        if self.irc:
+            input_line += "IRC "
         input_line += f"{self.functional} "
         if self.dispersion_method:
             input_line += f"{self.dispersion_method} "
@@ -172,7 +176,7 @@ class GenOrca(GenJob):
             
     def gen_title(self):
         if self.irc:
-            return f"{self.name} irc {self.irc_direction}"
+            return f"{self.name} irc"
         elif self.opt:
             return f"{self.name} opt"
         elif self.freq:
