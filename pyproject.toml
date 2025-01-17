@@ -11,4 +11,4 @@ authors = [
 ]
 
 [tool.setuptools]
-packages = ["find:."]
+packages = { find = { where = ["."] } }
