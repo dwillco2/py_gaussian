@@ -84,7 +84,7 @@ class GenOrca(GenJob):
                 f.write("%geom\n")
                 f.write("Calc_Hess true\n")
                 f.write("NumHess true\n")
-                f.write("Recalc_Hess 5\n")
+                f.write("Recalc_Hess 20\n")
                 f.write("end\n")
             if self.irc:
                 f.write("%irc\n")
@@ -94,14 +94,14 @@ class GenOrca(GenJob):
                 f.write("%GEOM \n")
                 f.write(" Constraints\n")
                 for i in self.freeze_atoms:
-                    f.write(f"  {{C {i} C}}\n")
+                    f.write(f"  {{C {i-1} C}}\n")
                 f.write(" END\n")
                 f.write("END\n")
             if self.freeze_bonds:
                 f.write("%GEOM \n")
                 f.write(" Constraints\n")
-                for i in self.freeze_atoms:
-                    f.write(f"  {{B {i[0]} {i[1]} C}}\n")
+                for i in self.freeze_bonds:
+                    f.write(f"  {{B {i[0]-1} {i[1]-1} C}}\n")
                 f.write(" END\n")
                 f.write("END\n") 
             f.write(f"# {self.title}\n")

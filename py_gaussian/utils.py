@@ -173,7 +173,7 @@ def read_orca_output(file):
     # takes an orca output file and reads SCF and thermochemistry info into dataframe
     file_name = os.path.split(file)
     name = file_name[1].replace(".out","")
-    with open(file, "r") as f:
+    with open(file, "r", errors="replace") as f:
         lines = f.readlines()
         f.close()
     sp = 0
@@ -220,3 +220,43 @@ def read_orca_output(file):
                             "G": [g],
                             })
     return df
+
+
+def orca_job_finished(output_file_path):
+    try:
+        with open(output_file_path, 'r') as file:
+            for line in file.readlines():
+                if "The optimization did not converge but reached the maximum" in line:
+                    return False
+                if "ORCA TERMINATED NORMALLY" in line:
+                    return True
+        return False
+    except FileNotFoundError:
+        print(f"File not found: {output_file_path}")
+        return False
+    
+
+def orca_optimised(output_file_path):
+    found_vib = False
+    n_skipped = 0
+    if orca_job_finished(output_file_path):
+        with open(output_file_path, 'r') as file:
+            for line in file.readlines():
+                if "VIBRATIONAL FREQUENCIES" in line:
+                    found_vib = True
+                    continue
+                if found_vib and n_skipped <= 4:
+                    n_skipped += 1
+                    continue
+                if found_vib and n_skipped > 4:
+                    if line.strip() == "" or "---" in line:
+                        break
+                    content = line.split()
+                    if float(content[1]) < 0:
+                        return False
+            return True
+    else:
+        return False
+
+
+    
