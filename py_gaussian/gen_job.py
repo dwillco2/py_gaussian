@@ -58,7 +58,10 @@ class GenJob:
     def read_xyz(self):
         if self.xyz:
             xyz_directory = os.path.join(self.directory,self.xyz)
-            with open(xyz_directory, "r") as f:
-                xyz_lines = f.readlines()
-                self.xyz_lines = xyz_lines[2:]
-                f.close()
+            try:
+                with open(xyz_directory, "r") as f:
+                    xyz_lines = f.readlines()
+                    self.xyz_lines = xyz_lines[2:]
+                    f.close()
+            except:
+                print("No .xyz file found")

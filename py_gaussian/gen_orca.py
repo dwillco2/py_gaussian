@@ -89,7 +89,21 @@ class GenOrca(GenJob):
             if self.irc:
                 f.write("%irc\n")
                 f.write(" MAXITER 30\n")
-                f.write("end\n") 
+                f.write("end\n")
+            if self.freeze_atoms:
+                f.write("%GEOM \n")
+                f.write(" Constraints\n")
+                for i in self.freeze_atoms:
+                    f.write(f"  {{C {i} C}}\n")
+                f.write(" END\n")
+                f.write("END\n")
+            if self.freeze_bonds:
+                f.write("%GEOM \n")
+                f.write(" Constraints\n")
+                for i in self.freeze_atoms:
+                    f.write(f"  {{B {i[0]} {i[1]} C}}\n")
+                f.write(" END\n")
+                f.write("END\n") 
             f.write(f"# {self.title}\n")
             f.write("\n")
             f.write(f"*XYZFILE {self.charge} {self.multiplicity} {self.xyz}\n")
@@ -171,6 +185,8 @@ class GenOrca(GenJob):
             input_line += "NumFreq "
         if not self.goat:
             input_line += "TightSCF "
+        if self.solvent:
+            input_line += f"SMD({self.solvent}) "
         return input_line
     
             
